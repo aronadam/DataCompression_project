@@ -57,26 +57,30 @@ def progression_plot(x):
     plt.show()
 
 
-def MSE_plot(X):
+def NMSE_plot(X):
 
+    # Number of samples (rows in the fat matrix)
     M_list = [50, 100, 200, 300, 400, 500, 600, 700, 784]
+
     X_index = range(len(X))
 
-    MSE_list = [[] for _ in range(len(M_list))]
+    NMSE_lists = [[] for _ in range(len(M_list))]
 
+    # Compute NMSE for each M for various X's
     for i in range(len(M_list)):
         for k in X_index:
             x = X[k]
             reconstructed = one_bit_cs_by_lp(M_list[i], x)
-            MSE_list[i].append(np.mean((x - reconstructed) ** 2))
-            print(i, k)
+            MSE = np.mean((x - reconstructed) ** 2)
+            NMSE = MSE / (np.linalg.norm(x) ** 2)
+            NMSE_lists[i].append(NMSE)
+            print(f"Reconstructed X_{k} with {M_list[i]} samples")
 
-    mean_MSE = [np.mean(MSE) for MSE in MSE_list]
+    # Average the NMSE for each M
+    mean_NMSE = [np.mean(NMSE_list) for NMSE_list in NMSE_lists]
 
-    norm_x = np.linalg.norm(X[0])**2
-    NMSE_list = [MSE/norm_x for MSE in mean_MSE]
-
-    plt.plot(M_list, NMSE_list, marker=">")
+    # Plot the mean NMSE for each M
+    plt.plot(M_list, mean_NMSE, marker=">")
     plt.ylim(0.0)
     plt.show()
 
@@ -87,4 +91,4 @@ if __name__ == "__main__":
 
     X, y = mnist[:, 1:], mnist[:, 0]
 
-    MSE_plot(X[0:3])
+    NMSE_plot(X[0:5])
