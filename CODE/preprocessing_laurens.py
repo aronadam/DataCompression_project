@@ -28,7 +28,7 @@ def one_bit_cs_by_lp(M_samples, x):
 
     prob.solve()
 
-    return np.array(x.value)
+    return np.clip(np.array(x.value), 0, 255)
 
 
 def progression_plot(x):
@@ -57,6 +57,45 @@ def progression_plot(x):
     plt.show()
 
 
+def progression_plot_extended(X):
+
+    # Get the first occurence of each number
+    numbers = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    indexes = []
+    for n in numbers:
+        indexes.append(np.where(y == n)[0][0])
+    X = X[indexes]
+
+    # Reconstruct using various sample sizes
+    M_list = [25, 100, 200, 500, 0]
+    fig, axs = plt.subplots(5, len(X))
+    fig.suptitle("1-bit Compressed Sensing by LP")
+
+    for M, row in zip(M_list, axs):
+        for i, ax in zip(numbers, row):
+            x = X[i]
+            if M == 0:
+                ax.imshow(x.reshape(28, 28), cmap='gray', vmin=0, vmax=255)
+                if i == 0:
+                    ax.set_ylabel("Original")
+                    ax.xaxis.set_visible(False)
+                    ax.tick_params(left=False, labelleft=False)
+                else:
+                    ax.axis('off')
+            else:
+                reconstructed = one_bit_cs_by_lp(M, x)
+                ax.imshow(reconstructed.reshape(28, 28), cmap='gray', vmin=0, vmax=255)
+                if i == 0:
+                    ax.set_ylabel(f"M = {M}")
+                    ax.xaxis.set_visible(False)
+                    ax.tick_params(left=False, labelleft=False)
+                else:
+                    ax.axis('off')
+
+            print(f"Plotting {i} with {M} samples")
+    plt.show()
+
+
 def NMSE_plot(X):
 
     # Number of samples (rows in the fat matrix)
@@ -71,8 +110,14 @@ def NMSE_plot(X):
         for k in X_index:
             x = X[k]
             reconstructed = one_bit_cs_by_lp(M_list[i], x)
-            MSE = np.mean((x - reconstructed) ** 2)
-            NMSE = MSE / (np.linalg.norm(x) ** 2)
+
+            x_normalized = x / np.linalg.norm(x)
+            reconstructed_normalized = reconstructed / np.linalg.norm(reconstructed)
+
+            MSE = np.linalg.norm(x - reconstructed) ** 2
+            NMSE = np.linalg.norm(x_normalized - reconstructed_normalized) ** 2
+            # NMSE = np.mean(np.square(x_normalized - reconstructed_normalized))
+
             NMSE_lists[i].append(NMSE)
             print(f"Reconstructed X_{k} with {M_list[i]} samples")
 
@@ -91,4 +136,4 @@ if __name__ == "__main__":
 
     X, y = mnist[:, 1:], mnist[:, 0]
 
-    NMSE_plot(X[0:5])
+    progression_plot_extended(X)
