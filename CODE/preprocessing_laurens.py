@@ -22,7 +22,7 @@ def one_bit_cs_by_lp(M_samples, x):
     constraints = [x <= u]
     constraints += [x >= -u]
     constraints += [np.diag(y) @ A @ x >= np.zeros(M)]
-    constraints += [cp.sum(np.diag(y) @ A @ x) >= M*100]
+    constraints += [cp.sum(np.diag(y) @ A @ x) >= M*255]
 
     prob = cp.Problem(cp.Minimize(cp.sum(u)), constraints)
 
