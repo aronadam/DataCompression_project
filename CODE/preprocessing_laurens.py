@@ -1,3 +1,4 @@
+import math
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -57,9 +58,9 @@ def progression_plot(x):
     plt.show()
 
 
-def progression_plot_extended(X):
+def progression_plot_extended(X, y):
 
-    # Get the first occurence of each number
+    # Get the first occurrence of each number
     numbers = np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     indexes = []
     for n in numbers:
@@ -130,10 +131,19 @@ def NMSE_plot(X):
     plt.show()
 
 
+def sparsity_vs_measurments_plot():
+    S = range(1, 785)
+    N = 784
+    M = [s * math.log2(N / s) for s in S]
+    plt.plot(S, M)
+    plt.xlabel("Sparsity level s")
+    plt.ylabel("m = s log2(N / s))")
+    plt.title("Number of measurements needed given sparsity level (N = 784)")
+    plt.show()
+
+
 if __name__ == "__main__":
 
     mnist = pd.read_csv("../DATA/mnist_train.csv", header=None).to_numpy()
 
-    X, y = mnist[:, 1:], mnist[:, 0]
-
-    progression_plot_extended(X)
+    sparsity_vs_measurments_plot()
