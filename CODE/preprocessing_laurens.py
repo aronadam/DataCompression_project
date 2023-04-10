@@ -1,4 +1,5 @@
 import math
+import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,45 +16,50 @@ def one_bit_cs_by_lp(M_samples, x):
     A = fat_matrix(M_samples)
     M, N = A.shape
 
-    y = np.sign(A @ x)
+    # Normalize x
+    # norm = np.linalg.norm(x)
+    # x = x / norm
+
+    y = np.sign(A @ x)  # + np.random.normal(0.0, 0.01, M))
 
     u = cp.Variable(N)
-    x = cp.Variable(N)
+    x_hat = cp.Variable(N)
 
-    constraints = [x <= u]
-    constraints += [x >= -u]
-    constraints += [np.diag(y) @ A @ x >= np.zeros(M)]
-    constraints += [cp.sum(np.diag(y) @ A @ x) >= M*255]
+    constraints = [x_hat <= u]
+    constraints += [x_hat >= -u]
+    constraints += [np.diag(y) @ A @ x_hat >= np.zeros(M)]
+    constraints += [cp.sum(np.diag(y) @ A @ x_hat) >= 255*M]
 
     prob = cp.Problem(cp.Minimize(cp.sum(u)), constraints)
 
     prob.solve()
 
-    return np.clip(np.array(x.value), 0, 255)
+    return np.array(x_hat.value)
 
 
 def progression_plot(x):
 
     # Reconstruct using various sample sizes
     reconstructed_list = []
-    for M in [25, 100, 300, 500, 700]:
+    M_list = [25, 100, 300, 500, 700]
+    for M in M_list:
         reconstructed = one_bit_cs_by_lp(M, x)
         reconstructed_list.append(reconstructed)
 
     # Plot result
     fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
     fig.suptitle("1-bit Compressed Sensing by LP")
-    ax1.imshow(reconstructed_list[0].reshape(28, 28), cmap='gray', vmin=0, vmax=255)
-    ax1.set_title("M = 25")
-    ax2.imshow(reconstructed_list[1].reshape(28, 28), cmap='gray', vmin=0, vmax=255)
-    ax2.set_title("M = 100")
-    ax3.imshow(reconstructed_list[2].reshape(28, 28), cmap='gray', vmin=0, vmax=255)
-    ax3.set_title("M = 300")
-    ax4.imshow(reconstructed_list[3].reshape(28, 28), cmap='gray', vmin=0, vmax=255)
-    ax4.set_title("M = 500")
-    ax5.imshow(reconstructed_list[4].reshape(28, 28), cmap='gray', vmin=0, vmax=255)
-    ax5.set_title("M = 700")
-    ax6.imshow(x.reshape(28, 28), cmap='gray', vmin=0, vmax=255)
+    ax1.imshow(reconstructed_list[0].reshape(28, 28), cmap='gray_r', vmin=min(reconstructed_list[0]), vmax=max(reconstructed_list[0]))
+    ax1.set_title(f"M = {M_list[0]}")
+    ax2.imshow(reconstructed_list[1].reshape(28, 28), cmap='gray_r', vmin=min(reconstructed_list[1]), vmax=max(reconstructed_list[1]))
+    ax2.set_title(f"M = {M_list[1]}")
+    ax3.imshow(reconstructed_list[2].reshape(28, 28), cmap='gray_r', vmin=min(reconstructed_list[2]), vmax=max(reconstructed_list[2]))
+    ax3.set_title(f"M = {M_list[2]}")
+    ax4.imshow(reconstructed_list[3].reshape(28, 28), cmap='gray_r', vmin=min(reconstructed_list[3]), vmax=max(reconstructed_list[3]))
+    ax4.set_title(f"M = {M_list[3]}")
+    ax5.imshow(reconstructed_list[4].reshape(28, 28), cmap='gray_r', vmin=min(reconstructed_list[4]), vmax=max(reconstructed_list[4]))
+    ax5.set_title(f"M = {M_list[4]}")
+    ax6.imshow(x.reshape(28, 28), cmap='gray_r', vmin=0, vmax=255)
     ax6.set_title("Original image")
     plt.show()
 
@@ -68,15 +74,15 @@ def progression_plot_extended(X, y):
     X = X[indexes]
 
     # Reconstruct using various sample sizes
-    M_list = [25, 100, 200, 500, 0]
-    fig, axs = plt.subplots(5, len(X))
+    M_list = [25, 100, 200, 358, 500, 0]
+    fig, axs = plt.subplots(len(M_list), len(X))
     fig.suptitle("1-bit Compressed Sensing by LP")
 
     for M, row in zip(M_list, axs):
         for i, ax in zip(numbers, row):
             x = X[i]
             if M == 0:
-                ax.imshow(x.reshape(28, 28), cmap='gray', vmin=0, vmax=255)
+                ax.imshow(x.reshape(28, 28), cmap='gray_r', vmin=min(x), vmax=max(x))
                 if i == 0:
                     ax.set_ylabel("Original")
                     ax.xaxis.set_visible(False)
@@ -85,7 +91,7 @@ def progression_plot_extended(X, y):
                     ax.axis('off')
             else:
                 reconstructed = one_bit_cs_by_lp(M, x)
-                ax.imshow(reconstructed.reshape(28, 28), cmap='gray', vmin=0, vmax=255)
+                ax.imshow(reconstructed.reshape(28, 28), cmap='gray_r', vmin=min(reconstructed), vmax=max(reconstructed))
                 if i == 0:
                     ax.set_ylabel(f"M = {M}")
                     ax.xaxis.set_visible(False)
@@ -116,8 +122,8 @@ def NMSE_plot(X):
             reconstructed_normalized = reconstructed / np.linalg.norm(reconstructed)
 
             MSE = np.linalg.norm(x - reconstructed) ** 2
-            NMSE = np.linalg.norm(x_normalized - reconstructed_normalized) ** 2
-            # NMSE = np.mean(np.square(x_normalized - reconstructed_normalized))
+            # NMSE = np.linalg.norm(x_normalized - reconstructed_normalized) ** 2
+            NMSE = np.mean(np.square(x_normalized - reconstructed_normalized))
 
             NMSE_lists[i].append(NMSE)
             print(f"Reconstructed X_{k} with {M_list[i]} samples")
@@ -144,6 +150,8 @@ def sparsity_vs_measurments_plot():
 
 if __name__ == "__main__":
 
-    mnist = pd.read_csv("../DATA/mnist_train.csv", header=None).to_numpy()
+    mnist_train = pd.read_csv("../DATA/mnist_train.csv", header=None).to_numpy()
+    mnist_test = pd.read_csv("../DATA/mnist_test.csv", header=None).to_numpy()
 
-    sparsity_vs_measurments_plot()
+    X_train, y_train = mnist_train[:, 1:], mnist_train[:, 0]
+    X_test, y_test = mnist_test[:, 1:], mnist_test[:, 0]
